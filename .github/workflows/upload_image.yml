@@ -1,4 +1,6 @@
 name: Upload Store Image
+
+# 🔸 トリガー設定（GASから repository_dispatch で呼び出される）
 on:
   repository_dispatch:
     types: [upload_store_image]
@@ -9,18 +11,26 @@ permissions:
 jobs:
   upload-image:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Decode & save image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract payload
+        id: p
         run: |
-          mkdir -p images/${{ github.event.client_payload.storeId }}
-          echo "${{ github.event.client_payload.imageBase64 }}" | base64 -d > images/${{ github.event.client_payload.storeId }}/hero.png
+          echo "STORE_ID=${{ github.event.client_payload.storeId }}" >> $GITHUB_ENV
+          echo "IMAGE_BASE64=${{ github.event.client_payload.imageBase64 }}" >> $GITHUB_ENV
+
+      - name: Decode and save image
+        run: |
+          mkdir -p images/$STORE_ID
+          echo "$IMAGE_BASE64" | base64 --decode > images/$STORE_ID/hero.png
 
       - name: Commit & push
         run: |
-          git config user.name "Misemaru Bot"
+          git config user.name  "Misemaru Bot"
           git config user.email "bot@misemaru.cloud"
-          git add images/${{ github.event.client_payload.storeId }}/hero.png
-          git commit -m "Add hero image for ${{ github.event.client_payload.storeId }}" || echo "No changes"
+          git add images/$STORE_ID/hero.png
+          git commit -m "feat(image): upload hero for ${STORE_ID}" || echo "No changes to commit"
           git push
