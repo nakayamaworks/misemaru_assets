@@ -1,1 +1,26 @@
+name: Upload Store Image
+on:
+  repository_dispatch:
+    types: [upload_store_image]
 
+permissions:
+  contents: write
+
+jobs:
+  upload-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decode & save image
+        run: |
+          mkdir -p images/${{ github.event.client_payload.storeId }}
+          echo "${{ github.event.client_payload.imageBase64 }}" | base64 -d > images/${{ github.event.client_payload.storeId }}/hero.png
+
+      - name: Commit & push
+        run: |
+          git config user.name "Misemaru Bot"
+          git config user.email "bot@misemaru.cloud"
+          git add images/${{ github.event.client_payload.storeId }}/hero.png
+          git commit -m "Add hero image for ${{ github.event.client_payload.storeId }}" || echo "No changes"
+          git push
